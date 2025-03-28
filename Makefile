@@ -1,12 +1,16 @@
 .DEFAULT_GOAL := push
 
-# Default commit message (quoted properly)
-COMMIT_MSG ?= Update project
+# Default commit message
+MSG ?= Update project
 
 push:
 	@git add .
-	@git commit -m "$(COMMIT_MSG)"
-	@git push origin main
+	@if git diff-index --quiet HEAD --; then \
+		echo "Nothing to commit."; \
+	else \
+		git commit -m "$(MSG)"; \
+		git push origin main; \
+	fi
 
 status:
 	@git status
@@ -20,6 +24,10 @@ log:
 # Allow custom commit messages
 commit:
 	@git add .
-	@git commit -m "$(COMMIT_MSG)"
+	@if git diff-index --quiet HEAD --; then \
+		echo "Nothing to commit."; \
+	else \
+		git commit -m "$(MSG)"; \
+	fi
 
 .PHONY: push status pull log commit
