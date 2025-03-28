@@ -1,6 +1,5 @@
 .DEFAULT_GOAL := push
 
-# Default commit message
 MSG ?= Update project
 
 push:
@@ -21,11 +20,10 @@ pull:
 log:
 	@git log --oneline --graph --decorate --all
 
-# Allow custom commit messages
 commit:
 	@git add .
 	@if git diff-index --quiet HEAD --; then \
-		echo "Nothing to commit."; \
+		echo "All good gng, no changes made!"; \
 	else \
 		git commit -m "$(MSG)"; \
 	fi
