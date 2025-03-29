@@ -24,8 +24,10 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
+
+//User Create
 app.post("/api/users", async (req, res) => {
-  const user = req.body.user; // Assuming you're sending user data in the request body
+  const user = req.body;
 
   // Basic validation for required fields
   if (
@@ -114,9 +116,9 @@ app.post("/api/users", async (req, res) => {
 
 
 
-
+// Category Create
 app.post("/api/categories", async (req, res) => {
-  const category = req.body.category; // Assuming you're sending category data in the request body
+  const category = req.body; // Assuming you're sending category data in the request body
 
   // Basic validation for required fields
   if (!category || !category.name || category.name.length < 3) {
@@ -168,8 +170,10 @@ app.post("/api/categories", async (req, res) => {
 });
 
 
+
+// Expense Create
 app.post("/api/expenses", async (req, res) => {
-  const expense = req.body.expense; // Assuming you're sending expense data in the request body
+  const expense = req.body; // Assuming you're sending expense data in the request body
 
   // Basic validation for required fields
   if (
