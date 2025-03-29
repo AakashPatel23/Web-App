@@ -5,9 +5,9 @@ import dotenv from "dotenv"
 import { connectDB } from "./config/db.js";
 import bcrypt from "bcryptjs";
 import validator from "validator";
-import User from "./models/User";
-import Category from "./models/Category";
-import Expense from "./models/Expense";
+import User from "./models/User.js";
+import Category from "./models/Category.js";
+import Expense from "./models/Expense.js";
 
 dotenv.config();
 
@@ -24,7 +24,7 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
-app.post("/users", async (req, res) => {
+app.post("/api/users", async (req, res) => {
   const user = req.body.user; // Assuming you're sending user data in the request body
 
   // Basic validation for required fields
@@ -115,7 +115,7 @@ app.post("/users", async (req, res) => {
 
 
 
-app.post("/categories", async (req, res) => {
+app.post("/api/categories", async (req, res) => {
   const category = req.body.category; // Assuming you're sending category data in the request body
 
   // Basic validation for required fields
@@ -168,7 +168,7 @@ app.post("/categories", async (req, res) => {
 });
 
 
-app.post("/expenses", async (req, res) => {
+app.post("/api/expenses", async (req, res) => {
   const expense = req.body.expense; // Assuming you're sending expense data in the request body
 
   // Basic validation for required fields
