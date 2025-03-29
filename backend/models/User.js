@@ -6,7 +6,8 @@ const UserSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Hashed password should be stored
   },
-  { collection: "users" }
+  { collection: "users", 
+    timestamps: true } // This will add createdAt and updatedAt fields to the schema
 );
 
-module.exports = mongoose.model("User", UserSchema);
+export default mongoose.model("User", UserSchema);

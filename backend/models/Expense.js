@@ -14,7 +14,7 @@ const ExpenseSchema = new mongoose.Schema(
     date: { type: Date, default: Date.now },
     notes: { type: String, default: null },
   },
-  { collection: "expenses" }
+  { collection: "expenses", timestamps: true } // This will add createdAt and updatedAt fields to the schema
 );
 
-module.exports = mongoose.model("Expense", ExpenseSchema);
+export default mongoose.model("Expense", ExpenseSchema);
