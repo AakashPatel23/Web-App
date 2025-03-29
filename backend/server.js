@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 //import records from "./routes/record.js";
+import dotenv from "dotenv"
+import { connectDB } from "./config/db.js";
+
+dotenv.config();
 
 const PORT = process.env.PORT || 5050;
 const app = express();
@@ -11,12 +15,11 @@ app.use(express.json());
 
 // start the Express server
 app.listen(PORT, () => {
+  connectDB(); // Call the function to connect to the database
   console.log(`Server listening on port ${PORT}`);
 });
 
 app.get("/finances", (req, res) => {});
-
-console.log(process.env.MONGO_URI)
 
 //const mongoose = require("mongoose");
 /*
