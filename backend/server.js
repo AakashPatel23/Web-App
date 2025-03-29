@@ -25,6 +25,14 @@ app.listen(PORT, () => {
 });
 
 
+
+
+
+
+
+
+
+
 //User Create
 app.post("/api/users", async (req, res) => {
   const user = req.body;
@@ -114,6 +122,59 @@ app.post("/api/users", async (req, res) => {
 });
 
 
+// User Delete
+app.delete("/api/users/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find and delete the user
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find all categories associated with the user
+    const userCategories = await Category.find({ user: userId });
+
+    // Extract category IDs
+    const categoryIds = userCategories.map((category) => category._id);
+
+    // Delete all expenses related to the user's categories
+    await Expense.deleteMany({
+      $or: [{ user: userId }, { category: { $in: categoryIds } }],
+    });
+
+    // Delete all categories associated with the user
+    await Category.deleteMany({ user: userId });
+
+    return res.status(200).json({
+      success: true,
+      message: "User, associated categories, and expenses deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Category Create
@@ -168,6 +229,49 @@ app.post("/api/categories", async (req, res) => {
     });
   }
 });
+
+
+// Category Delete
+app.delete("/api/categories/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Find and delete the category
+    const deletedCategory = await Category.findByIdAndDelete(categoryId);
+
+    if (!deletedCategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    // Delete all expenses related to this category
+    await Expense.deleteMany({ category: categoryId });
+
+    return res.status(200).json({
+      success: true,
+      message: "Category and associated expenses deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -232,5 +336,27 @@ app.post("/api/expenses", async (req, res) => {
       success: false,
       message: "Server error. Please try again later.",
     });
+  }
+});
+
+// Expense Delete
+app.delete("/api/expenses/:expenseId", async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+
+    const deletedExpense = await Expense.findByIdAndDelete(expenseId);
+
+    if (!deletedExpense) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Expense not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Expense deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting expense:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
