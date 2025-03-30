@@ -191,7 +191,9 @@ app.post("/api/categories", async (req, res) => {
 
   // Sanitize the category name
   category.name = validator.escape(category.name.trim()); // Escape harmful characters and trim whitespace
-
+  category.description = category.description
+    ? validator.escape(category.description.trim())
+    : null; // Sanitize notes (if provided)
   try {
     // Check if category already exists for the user
     const existingCategory = await Category.findOne({
@@ -209,6 +211,7 @@ app.post("/api/categories", async (req, res) => {
     const newCategory = new Category({
       user: category.user,
       name: category.name,
+      description: category.description,
     });
 
     // Save the new category to the database
@@ -219,6 +222,7 @@ app.post("/api/categories", async (req, res) => {
       message: "Category created successfully.",
       category: {
         name: newCategory.name, // Return only the name and user to avoid exposing sensitive data
+        description: category.description,
       },
     });
   } catch (error) {
@@ -274,7 +278,6 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
 
 
 
-
 // Expense Create
 app.post("/api/expenses", async (req, res) => {
   const expense = req.body; // Assuming you're sending expense data in the request body
@@ -284,12 +287,11 @@ app.post("/api/expenses", async (req, res) => {
     !expense ||
     !expense.name ||
     !expense.amount ||
-    !expense.category ||
-    !expense.date
+    !expense.category
   ) {
     return res.status(400).json({
       success: false,
-      message: "Expense name, amount, category, and date are required.",
+      message: "Expense name, amount, and category are required.",
     });
   }
 
@@ -303,7 +305,7 @@ app.post("/api/expenses", async (req, res) => {
 
   // Sanitize the expense name and notes (if provided)
   expense.name = validator.escape(expense.name.trim()); // Sanitize and trim the expense name
-  expense.notes = expense.notes ? validator.escape(expense.notes.trim()) : null; // Sanitize notes (if provided)
+  expense.description = expense.description ? validator.escape(expense.description.trim()) : null; // Sanitize notes (if provided)
 
   try {
     // Create the new expense object
@@ -312,8 +314,7 @@ app.post("/api/expenses", async (req, res) => {
       name: expense.name,
       amount: expense.amount,
       category: expense.category,
-      date: expense.date,
-      notes: expense.notes,
+      description: expense.description,
     });
 
     // Save the new expense to the database
@@ -326,8 +327,7 @@ app.post("/api/expenses", async (req, res) => {
         name: newExpense.name,
         amount: newExpense.amount,
         category: newExpense.category,
-        date: newExpense.date,
-        notes: newExpense.notes,
+        description: newExpense.description,
       },
     });
   } catch (error) {

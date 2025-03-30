@@ -10,8 +10,7 @@ const ExpenseSchema = new mongoose.Schema(
       ref: "Category",
       required: true,
     },
-    date: { type: Date, default: Date.now },
-    notes: { type: String, default: null },
+    description: { type: String, default: null },
   },
   { collection: "expenses", timestamps: true } // This will add createdAt and updatedAt fields to the schema
 );
