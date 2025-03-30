@@ -303,10 +303,23 @@ app.post("/api/expenses", async (req, res) => {
     });
   }
 
-  // Sanitize the expense name and notes (if provided)
+  // Sanitize the expense name and description (if provided)
   expense.name = validator.escape(expense.name.trim()); // Sanitize and trim the expense name
   expense.description = expense.description ? validator.escape(expense.description.trim()) : null; // Sanitize notes (if provided)
 
+  let expenseDate;
+  if (expense.date) {
+    if (!validator.isISO8601(expense.date)) {
+      // Check if date is in valid format
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Please use YYYY-MM-DD.",
+      });
+    }
+    expenseDate = new Date(expense.date);
+  } else {
+    expenseDate = Date.now();
+  }
   try {
     // Create the new expense object
     const newExpense = new Expense({
@@ -315,6 +328,7 @@ app.post("/api/expenses", async (req, res) => {
       amount: expense.amount,
       category: expense.category,
       description: expense.description,
+      date: expenseDate,
     });
 
     // Save the new expense to the database
@@ -328,6 +342,7 @@ app.post("/api/expenses", async (req, res) => {
         amount: newExpense.amount,
         category: newExpense.category,
         description: newExpense.description,
+        date: newExpense.date, 
       },
     });
   } catch (error) {
