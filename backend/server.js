@@ -8,6 +8,8 @@ import validator from "validator";
 import User from "./models/User.js";
 import Category from "./models/Category.js";
 import Expense from "./models/Expense.js";
+import mongoose from "mongoose";
+
 
 dotenv.config();
 
@@ -375,3 +377,174 @@ app.delete("/api/expenses/:expenseId", async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+
+
+
+
+
+
+
+
+
+// Get user with username while sanitizing the input
+app.get("/api/users/username/:username", async (req, res) => {
+  try {
+    // Sanitize the username input
+    const username = validator.escape(req.params.username.trim());
+    if (!username) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid username." });
+    }
+
+    // Find the user by username
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error("Error fetching user by username:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
+
+
+
+// Get all categories for a user while sanitizing the input
+app.get("/api/:userId/categories", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid user ID." });
+    }
+
+    const categories = await Category.find({ user: userId }).lean();
+    if (!categories.length) {
+      return res.status(404).json({ success: false, message: "No categories found." });
+    }
+     return res.json({ success: true, categories });
+  }
+  catch (error) {
+    console.error("Error fetching categories:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
+
+// Get all expenses for a user while sanitizing the input
+app.get("/api/:userId/expenses", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid user ID." });
+    }
+
+    // Fetch expenses for the user and populate the category name
+    const expenses = await Expense.find({ user: userId })
+      .populate("category", "name") // Populate category name
+      .sort({ date: -1 }); // Sort expenses by date in descending order
+
+    if (expenses.length === 0) {
+      return res.status(404).json({ success: false, message: "No expenses found." });
+    }
+
+    return res.status(200).json({ success: true, expenses });
+  } catch (error) {
+    console.error("Error fetching expenses:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
+// Get expenses by category for a user while sanitizing the input
+app.get("/api/:userId/expenses/category/:categoryId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const categoryId = req.params.categoryId;
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ success: false, message: "Invalid user or category ID." });
+    }
+
+    // Fetch expenses for the user filtered by category and populate the category name
+    const expenses = await Expense.find({ user: userId, category: categoryId })
+      .populate("category", "name") // Populate category name
+      .sort({ date: -1 }); // Sort expenses by date in descending order
+
+    if (expenses.length === 0) {
+      return res.status(404).json({ success: false, message: "No expenses found for this category." });
+    }
+
+    return res.status(200).json({ success: true, expenses });
+  } catch (error) {
+    console.error("Error fetching expenses by category:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
+// Get expense by ID while sanitizing the input
+app.get("/api/expenses/id/:expenseId", async (req, res) => {
+  try {
+    const expenseId = req.params.expenseId;
+
+    if (!mongoose.Types.ObjectId.isValid(expenseId)) {
+      return res.status(400).json({ success: false, message: "Invalid expense ID." });
+    }
+
+    // Fetch the expense by ID and populate the category name
+    const expense = await Expense.findById(expenseId)
+      .populate("category", "name"); // Populate category name
+
+    if (!expense) {
+      return res.status(404).json({ success: false, message: "Expense not found." });
+    }
+
+    return res.status(200).json({ success: true, expense });
+  } catch (error) {
+    console.error("Error fetching expense by ID:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
+
+// Get category by ID while sanitizing the input
+app.get("/api/categories/id/:categoryId", async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ success: false, message: "Invalid category ID." });
+    }
+
+    // Fetch the category by ID
+    const category = await Category.findById(categoryId);
+
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found." });
+    }
+
+    return res.status(200).json({ success: true, category });
+  } catch (error) {
+    console.error("Error fetching category by ID:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error." });
+  }
+});
+
