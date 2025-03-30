@@ -548,3 +548,167 @@ app.get("/api/categories/id/:categoryId", async (req, res) => {
   }
 });
 
+
+
+
+// Update user password while sanitizing the input
+app.patch("/api/users/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+
+    // Validate userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user ID." });
+    }
+
+    // Validate password
+    if (
+      !password ||
+      password.length < 6 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password) ||
+      !/[@$!%*?&]/.test(password) ||
+      /\s/.test(password)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 6 characters long, contain an uppercase and lowercase letter, a number, and a special character.",
+      });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Update user password
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { password: hashedPassword },
+      { new: true }
+    ).lean();
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    return res.json({
+      success: true,
+      message: "Password updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+
+// Update category while sanitizing the input
+app.patch("/api/categories/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { name, description } = req.body;
+
+    // Validate categoryId
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid category ID." });
+    }
+
+    // Create an update object with sanitized fields
+    const updates = {};
+    if (name) updates.name = validator.escape(name.trim());
+    if (description) updates.description = validator.escape(description.trim());
+
+    // Ensure at least one field is provided
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No valid fields to update." });
+    }
+
+    // Update the category
+    const updatedCategory = await Category.findByIdAndUpdate(
+      categoryId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!updatedCategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found." });
+    }
+
+    return res.json({
+      success: true,
+      message: "Category updated successfully.",
+      category: updatedCategory,
+    });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+// Update expense while sanitizing the input
+app.patch("/api/expenses/:expenseId", async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const { name, amount, category, description, date } = req.body;
+
+    // Validate expenseId
+    if (!mongoose.Types.ObjectId.isValid(expenseId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expense ID." });
+    }
+
+    // Create an update object with sanitized fields
+    const updates = {};
+    if (name) updates.name = escape(name.trim());
+    if (amount && !isNaN(amount) && amount > 0) updates.amount = amount;
+    if (category) updates.category = category;
+    if (description) updates.description = escape(description.trim());
+    if (date) {
+      const parsedDate = new Date(date);
+      if (!isNaN(parsedDate.getTime())) updates.date = parsedDate;
+    }
+
+    // Ensure at least one field is provided
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No valid fields to update." });
+    }
+
+    // Update the expense
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      expenseId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!updatedExpense) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Expense not found." });
+    }
+
+    return res.json({
+      success: true,
+      message: "Expense updated successfully.",
+      expense: updatedExpense,
+    });
+  } catch (error) {
+    console.error("Error updating expense:", error);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+});
