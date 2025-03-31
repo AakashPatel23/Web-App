@@ -1,18 +1,12 @@
-import Expense from "../backend/models/Expense.js";
+import Expense from "../models/Expense.js";
 import validator from "validator";
 import mongoose from "mongoose";
-
 
 export const createExpense = async (req, res) => {
   const expense = req.body; // Assuming you're sending expense data in the request body
 
   // Basic validation for required fields
-  if (
-    !expense ||
-    !expense.name ||
-    !expense.amount ||
-    !expense.category
-  ) {
+  if (!expense || !expense.name || !expense.amount || !expense.category) {
     return res.status(400).json({
       success: false,
       message: "Expense name, amount, and category are required.",
@@ -29,7 +23,9 @@ export const createExpense = async (req, res) => {
 
   // Sanitize the expense name and description (if provided)
   expense.name = validator.escape(expense.name.trim()); // Sanitize and trim the expense name
-  expense.description = expense.description ? validator.escape(expense.description.trim()) : null; // Sanitize notes (if provided)
+  expense.description = expense.description
+    ? validator.escape(expense.description.trim())
+    : null; // Sanitize notes (if provided)
 
   let expenseDate;
   if (expense.date) {
@@ -66,7 +62,7 @@ export const createExpense = async (req, res) => {
         amount: newExpense.amount,
         category: newExpense.category,
         description: newExpense.description,
-        date: newExpense.date, 
+        date: newExpense.date,
       },
     });
   } catch (error) {
@@ -77,7 +73,6 @@ export const createExpense = async (req, res) => {
     });
   }
 };
-
 
 export const deleteExpense = async (req, res) => {
   try {
@@ -100,8 +95,7 @@ export const deleteExpense = async (req, res) => {
   }
 };
 
-
-export const getAllExpenses =  async (req, res) => {
+export const getAllExpenses = async (req, res) => {
   try {
     const userId = req.params.userId;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -128,7 +122,6 @@ export const getAllExpenses =  async (req, res) => {
   }
 };
 
-
 export const getAllExpensesByCategory = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -149,12 +142,10 @@ export const getAllExpensesByCategory = async (req, res) => {
       .sort({ date: -1 }); // Sort expenses by date in descending order
 
     if (expenses.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "No expenses found for this category.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "No expenses found for this category.",
+      });
     }
 
     return res.status(200).json({ success: true, expenses });
@@ -169,26 +160,29 @@ export const getExpenseById = async (req, res) => {
     const expenseId = req.params.expenseId;
 
     if (!mongoose.Types.ObjectId.isValid(expenseId)) {
-      return res.status(400).json({ success: false, message: "Invalid expense ID." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expense ID." });
     }
 
     // Fetch the expense by ID and populate the category name
-    const expense = await Expense.findById(expenseId)
-      .populate("category", "name"); // Populate category name
+    const expense = await Expense.findById(expenseId).populate(
+      "category",
+      "name"
+    ); // Populate category name
 
     if (!expense) {
-      return res.status(404).json({ success: false, message: "Expense not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Expense not found." });
     }
 
     return res.status(200).json({ success: true, expense });
   } catch (error) {
     console.error("Error fetching expense by ID:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error." });
+    return res.status(500).json({ success: false, message: "Server error." });
   }
 };
-
 
 export const updateExpense = async (req, res) => {
   try {

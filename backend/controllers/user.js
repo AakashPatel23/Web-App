@@ -1,6 +1,6 @@
-import User from "../backend/models/User.js";
-import Category from "../backend/models/Category.js";
-import Expense from "../backend/models/Expense.js";
+import User from "../models/User.js";
+import Category from "../models/Category.js";
+import Expense from "../models/Expense.js";
 import bcrypt from "bcryptjs";
 import validator from "validator";
 import mongoose from "mongoose";
@@ -92,7 +92,6 @@ export const createUser = async (req, res) => {
   }
 };
 
-
 export const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -151,9 +150,7 @@ export const getUserByUsername = async (req, res) => {
     return res.status(200).json({ success: true, user });
   } catch (error) {
     console.error("Error fetching user by username:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error." });
+    return res.status(500).json({ success: false, message: "Server error." });
   }
 };
 

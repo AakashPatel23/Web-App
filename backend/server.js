@@ -3,9 +3,9 @@ import cors from "cors";
 //import records from "./routes/record.js";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
-import userRoute from "../routes/user.js";
-import categoryRoute from "../routes/category.js";
-import expenseRoute from "../routes/expense.js";
+import userRoute from "./routes/user.js";
+import categoryRoute from "./routes/category.js";
+import expenseRoute from "./routes/expense.js";
 
 dotenv.config();
 

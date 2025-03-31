@@ -1,9 +1,7 @@
-
-import Category from "../backend/models/Category.js";
-import Expense from "../backend/models/Expense.js";
+import Category from "../models/Category.js";
+import Expense from "../models/Expense.js";
 import validator from "validator";
 import mongoose from "mongoose";
-
 
 export const createCategory = async (req, res) => {
   const category = req.body; // Assuming you're sending category data in the request body
@@ -134,7 +132,6 @@ export const getCategoryById = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
-
 
 export const updateCategory = async (req, res) => {
   try {

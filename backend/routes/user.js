@@ -1,5 +1,10 @@
 import express from "express";
-import {createUser, deleteUser, getUserByUsername, updatePassword} from "../controllers/user.js";
+import {
+  createUser,
+  deleteUser,
+  getUserByUsername,
+  updatePassword,
+} from "../controllers/user.js";
 
 const router = express.Router();
 
@@ -16,7 +21,3 @@ router.get("/username/:username", getUserByUsername);
 
 // Update user password while sanitizing the input
 router.patch("/:userId", updatePassword);
-
-
-
-

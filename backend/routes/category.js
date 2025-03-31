@@ -1,5 +1,11 @@
 import express from "express";
-import { createCategory, deleteCategory, getAllCategories, getCategoryById, updateCategory } from "../controllers/category.js"; // Assuming you have a createCategory function in your controllers
+import {
+  createCategory,
+  deleteCategory,
+  getAllCategories,
+  getCategoryById,
+  updateCategory,
+} from "../controllers/category.js"; // Assuming you have a createCategory function in your controllers
 const router = express.Router();
 
 export default router;
