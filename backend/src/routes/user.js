@@ -4,6 +4,7 @@ import {
   deleteUser,
   getUserByUsername,
   updatePassword,
+  login
 } from "../controllers/user.js";
 
 const router = express.Router();
@@ -21,3 +22,5 @@ router.get("/username/:username", getUserByUsername);
 
 // Update user password while sanitizing the input
 router.patch("/:userId", updatePassword);
+
+router.post("/login", login);

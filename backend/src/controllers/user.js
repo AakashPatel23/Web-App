@@ -147,6 +147,7 @@ export const getUserByUsername = async (req, res) => {
         .json({ success: false, message: "User not found." });
     }
 
+
     return res.status(200).json({ success: true, user });
   } catch (error) {
     console.error("Error fetching user by username:", error);
@@ -208,4 +209,56 @@ export const updatePassword = async (req, res) => {
     console.error("Error updating password:", error);
     return res.status(500).json({ success: false, message: "Server error." });
   }
+};
+
+
+export const login = async (req, res) => {
+const { username, password } = req.body;
+
+// Validate input
+if (!username || !password) {
+  return res.status(400).json({
+    success: false,
+    message: "Username and password are required.",
+  });
+}
+
+try {
+  // Sanitize input
+  const sanitizedUsername = validator.escape(username.trim());
+
+  // Find user by username
+  const user = await User.findOne({ username: sanitizedUsername });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Incorrect username or password.",
+    });
+  }
+
+  // Compare provided password with stored hashed password
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: "Incorrect username or password.",
+    });
+  }
+
+  // Return user information (excluding sensitive data)
+  return res.status(200).json({
+    success: true,
+    message: "Login successful!",
+    user: {
+      id: user._id,
+      username: user.username,
+    },
+  });
+} catch (error) {
+  console.error("Error during login:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Server error. Please try again later.",
+  });
+}
 };
