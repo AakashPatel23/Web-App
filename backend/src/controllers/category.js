@@ -20,11 +20,9 @@ export const createCategory = async (req, res) => {
     ? validator.escape(category.description.trim())
     : null; // Sanitize notes (if provided)
   try {
-    // Check if category already exists for the user
-    const existingCategory = await Category.findOne({
-      name: category.name,
-      user: category.user,
-    });
+  
+const existingCategory = await Category.findOne({ name: category.name });
+
     if (existingCategory) {
       return res.status(400).json({
         success: false,
@@ -34,7 +32,6 @@ export const createCategory = async (req, res) => {
 
     // Create the new category object
     const newCategory = new Category({
-      user: category.user,
       name: category.name,
       description: category.description,
     });
@@ -87,14 +84,7 @@ export const deleteCategory = async (req, res) => {
 
 export const getAllCategories = async (req, res) => {
   try {
-    const userId = req.params.userId;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid user ID." });
-    }
-
-    const categories = await Category.find({ user: userId }).lean();
+    const categories = await Category.find({}).lean();
     if (!categories.length) {
       return res
         .status(404)

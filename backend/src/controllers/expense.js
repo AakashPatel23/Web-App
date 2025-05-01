@@ -43,7 +43,6 @@ export const createExpense = async (req, res) => {
   try {
     // Create the new expense object
     const newExpense = new Expense({
-      user: expense.user,
       name: expense.name,
       amount: expense.amount,
       category: expense.category,
@@ -97,15 +96,8 @@ export const deleteExpense = async (req, res) => {
 
 export const getAllExpenses = async (req, res) => {
   try {
-    const userId = req.params.userId;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid user ID." });
-    }
-
     // Fetch expenses for the user and populate the category name
-    const expenses = await Expense.find({ user: userId })
+    const expenses = await Expense.find({})
       .populate("category", "name") // Populate category name
       .sort({ date: -1 }); // Sort expenses by date in descending order
 
@@ -124,20 +116,18 @@ export const getAllExpenses = async (req, res) => {
 
 export const getAllExpensesByCategory = async (req, res) => {
   try {
-    const userId = req.params.userId;
     const categoryId = req.params.categoryId;
 
     if (
-      !mongoose.Types.ObjectId.isValid(userId) ||
       !mongoose.Types.ObjectId.isValid(categoryId)
     ) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid user or category ID." });
+        .json({ success: false, message: "Invalid category ID." });
     }
 
     // Fetch expenses for the user filtered by category and populate the category name
-    const expenses = await Expense.find({ user: userId, category: categoryId })
+    const expenses = await Expense.find({ category: categoryId })
       .populate("category", "name") // Populate category name
       .sort({ date: -1 }); // Sort expenses by date in descending order
 

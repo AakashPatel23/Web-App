@@ -16,8 +16,8 @@ router.post("/", createCategory);
 // Category Delete
 router.delete("/:categoryId", deleteCategory);
 
-// Get all categories for a user while sanitizing the input
-router.get("/:userId", getAllCategories);
+// Get all categories while sanitizing the input
+router.get("/", getAllCategories);
 
 // Get category by ID while sanitizing the input
 router.get("/id/:categoryId", getCategoryById);
