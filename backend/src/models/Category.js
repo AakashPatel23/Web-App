@@ -1,12 +1,10 @@
 import mongoose from "mongoose";
-
 const CategorySchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // References User
     name: { type: String, required: true },
     description: { type: String, default: null },
   },
-  { collection: "categories", timestamps: true } // This will add createdAt and updatedAt fields to the schema
+  { collection: "categories", timestamps: true }
 );
-export default mongoose.model("Category", CategorySchema);
 
+export default mongoose.model("Category", CategorySchema);
