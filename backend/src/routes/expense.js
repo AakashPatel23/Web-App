@@ -7,6 +7,10 @@ import {
   getAllExpensesByCategory,
   getExpenseById,
   updateExpense,
+  generateTotalReport,
+  generateCategoryReport,
+  getHighestExpense,
+  generateNameReport
 } from "../controllers/expense.js";
 const router = express.Router();
 
@@ -29,3 +33,9 @@ router.get("/id/:expenseId", getExpenseById);
 
 // Update expense while sanitizing the input
 router.patch("/:expenseId", updateExpense);
+
+
+router.get("/report/total", generateTotalReport);
+router.get("/report/by-category", generateCategoryReport);
+router.get("/report/by-name", generateNameReport);
+router.get("/report/highest", getHighestExpense);
