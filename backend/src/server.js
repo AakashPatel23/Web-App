@@ -12,8 +12,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/categories", categoryRoute); // Use the category route for handling category-related requests
-app.use("/api/expenses", expenseRoute); // Use the expense route for handling expense-related requests
+app.use("/categories", categoryRoute); // Use the category route for handling category-related requests
+app.use("/expenses", expenseRoute); // Use the expense route for handling expense-related requests
 
 // start the Express server
 app.listen(PORT, () => {

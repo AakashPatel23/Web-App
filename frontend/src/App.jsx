@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import CategoryRow from "./components/CategoryRow.jsx";
 
-const API_BASE_URL_CATEGORIES = "http://localhost:5050/api/categories";
-const API_BASE_EXPENSES = "http://localhost:5050/api/expenses";
+const API_BASE_URL_CATEGORIES = "http://localhost:5050/categories";
+const API_BASE_EXPENSES = "http://localhost:5050/expenses";
 
 function App() {
   const [category, setCategory] = useState("");
