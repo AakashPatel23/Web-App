@@ -17,6 +17,7 @@ const ExpenseSchema = new mongoose.Schema(
   },
   { collection: "expenses", timestamps: true }
 );
-
+ExpenseSchema.index({ date: 1 });          
+ExpenseSchema.index({ category: 1 });
 export default mongoose.model("Expense", ExpenseSchema);
       

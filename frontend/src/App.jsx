@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CategoryRow from "./components/CategoryRow.jsx";
 
-const userID = "67e8813dbe8478df5f72d46b"; // Hardcoded for now
 const API_BASE_URL_CATEGORIES = "http://localhost:5050/api/categories";
-const API_BASE_URL_USER = "http://localhost:5050/api/users";
 const API_BASE_EXPENSES = "http://localhost:5050/api/expenses";
 
 function App() {
@@ -12,7 +10,7 @@ function App() {
 
   // Fetch categories when the component mounts
   useEffect(() => {
-    fetch(`${API_BASE_URL_CATEGORIES}/${userID}`)
+    fetch(`${API_BASE_URL_CATEGORIES}/`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -30,7 +28,7 @@ function App() {
     fetch(`${API_BASE_URL_CATEGORIES}/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: userID, name: category }),
+      body: JSON.stringify({ name: category }),
     })
       .then((res) => res.json())
       .then((data) => {

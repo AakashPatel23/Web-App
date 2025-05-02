@@ -6,5 +6,5 @@ const CategorySchema = new mongoose.Schema(
   },
   { collection: "categories", timestamps: true }
 );
-
+CategorySchema.index({ name: 1 }, { unique: true });
 export default mongoose.model("Category", CategorySchema);
