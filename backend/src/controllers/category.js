@@ -138,7 +138,7 @@ export const updateCategory = async (req, res) => {
     // Create an update object with sanitized fields
     const updates = {};
     if (name) updates.name = validator.escape(name.trim());
-    if (description) updates.description = validator.escape(description.trim());
+    if (description) updates.description = validator.trim(description.trim());
 
     // Ensure at least one field is provided
     if (Object.keys(updates).length === 0) {

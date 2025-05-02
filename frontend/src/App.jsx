@@ -62,6 +62,7 @@ function App() {
   };
 
   return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-5">
     <div className="max-w-3xl mx-auto p-5 flex flex-col items-center">
       <h1 className="text-3xl font-bold mb-2 text-center">
         Personal Financial Tracker
@@ -96,6 +97,7 @@ function App() {
           onClose={() => setShowAddCategoryModal(false)}
         />
       )}
+    </div>
     </div>
   );
 }

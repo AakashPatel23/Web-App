@@ -12,7 +12,7 @@ const Modal = ({ title, fields, onSubmit, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded shadow-lg w-80">
+      <div className="bg-gray-800 text-white p-6 rounded shadow-lg w-80">
         <h2 className="text-lg font-bold mb-4">{title}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           {fields.map((field) => (
@@ -33,7 +33,7 @@ const Modal = ({ title, fields, onSubmit, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded">
+              className="bg-gray-300 hover:bg-gray-400 text-white px-3 py-1 rounded">
               Cancel
             </button>
             <button
