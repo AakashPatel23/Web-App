@@ -1,141 +1,101 @@
 import React, { useState, useEffect } from "react";
-import CategoryRow from "./components/CategoryRow.jsx";
+import CategoryCard from "./components/CategoryCard.jsx";
+import Modal from "./components/Modal.jsx";
 
-const API_BASE_URL_CATEGORIES = "http://localhost:5050/categories";
+const API_BASE_CATEGORIES = "http://localhost:5050/categories";
 const API_BASE_EXPENSES = "http://localhost:5050/expenses";
 
 function App() {
-  const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
+  const [totalExpense, setTotalExpense] = useState(0);
+  const [refresh, setRefresh] = useState(0);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
 
-  // Fetch categories when the component mounts
-  useEffect(() => {
-    fetch(`${API_BASE_URL_CATEGORIES}/`)
+  const fetchData = () => {
+    fetch(`${API_BASE_CATEGORIES}/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setCategories(data.categories);
+      });
+
+    fetch(`${API_BASE_EXPENSES}/`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setCategories(data.categories);
-        } else {
-          console.error("Failed to fetch categories:", data.message);
+          const total = data.expenses.reduce(
+            (acc, curr) => acc + curr.amount,
+            0
+          );
+          setTotalExpense(total);
         }
-      })
-      .catch((err) => console.error("Error fetching categories:", err));
-  }, []);
+      });
+  };
 
-  // Function to add a category
-  const addCategory = () => {
-    if (category.trim() === "") return;
-    fetch(`${API_BASE_URL_CATEGORIES}/`, {
+  useEffect(() => {
+    fetchData();
+  }, [refresh]);
+
+  const handleAddCategory = (formData) => {
+    fetch(`${API_BASE_CATEGORIES}/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: category }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setCategories([...categories, data.category]); // Update UI
-          setCategory("");
-        } else {
-          console.error("Failed to add category:", data.message);
-        }
-      })
-      .catch((err) => console.error("Error adding category:", err));
+      body: JSON.stringify(formData),
+    }).then(() => {
+      setRefresh((prev) => prev + 1);
+      setShowAddCategoryModal(false);
+    });
   };
 
-  // Function to delete a category
-  const deleteCategory = (categoryId) => {
-    fetch(`${API_BASE_URL_CATEGORIES}/${categoryId}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setCategories(categories.filter((cat) => cat._id !== categoryId)); // Remove from UI
-          console.log("Category deleted successfully");
-        } else {
-          console.error("Failed to delete category:", data.message);
-        }
-      })
-      .catch((err) => console.error("Error deleting category:", err));
+  const handleDeleteCategory = (categoryId) => {
+    if (!window.confirm("Delete this category?")) return;
+    fetch(`${API_BASE_CATEGORIES}/${categoryId}`, { method: "DELETE" }).then(
+      () => setRefresh((prev) => prev + 1)
+    );
   };
 
-  // Function to edit a category
-  const editCategory = (categoryId, newName) => {
-    fetch(`${API_BASE_URL_CATEGORIES}/${categoryId}`, {
+  const handleEditCategory = (categoryId, updates) => {
+    fetch(`${API_BASE_CATEGORIES}/${categoryId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setCategories(
-            categories.map((cat) =>
-              cat._id === categoryId ? { ...cat, name: newName } : cat
-            )
-          );
-        } else {
-          console.error("Failed to edit category:", data.message);
-        }
-      })
-      .catch((err) => console.error("Error updating category:", err));
+      body: JSON.stringify(updates),
+    }).then(() => setRefresh((prev) => prev + 1));
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        textAlign: "center",
-      }}>
-      <h2>Category Manager</h2>
-
-      <input
-        type="text"
-        placeholder="Enter category name"
-        value={category.name}
-        onChange={(e) => setCategory(e.target.value)}
-        style={{ padding: "8px", marginRight: "8px" }}
-      />
-
-      <button onClick={addCategory} style={{ padding: "8px 12px" }}>
-        Add Category
+    <div className="max-w-3xl mx-auto p-5 flex flex-col items-center">
+      <h1 className="text-3xl font-bold mb-2 text-center">
+        Personal Financial Tracker
+      </h1>
+      <p className="text-lg text-center mb-4">
+        Total Expenses: ${totalExpense.toFixed(2)}
+      </p>
+      <button
+        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mb-4"
+        onClick={() => setShowAddCategoryModal(true)}>
+        + Add Category
       </button>
 
-      <table
-        style={{
-          width: "80%",
-          marginTop: "20px",
-          borderCollapse: "collapse",
-          border: "1px solid black",
-          textAlign: "center",
-        }}>
-        <thead>
-          <tr style={{ backgroundColor: "#ddd" }}>
-            <th style={{ padding: "10px", border: "1px solid black" }}>
-              Category
-            </th>
-            <th style={{ padding: "10px", border: "1px solid black" }}>
-              Add Expense
-            </th>
-            <th style={{ padding: "10px", border: "1px solid black" }}>Edit</th>
-            <th style={{ padding: "10px", border: "1px solid black" }}>
-              Delete
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {categories.map((category) => (
-            <CategoryRow
-              key={category._id}
-              category={category}
-              onDelete={deleteCategory}
-              onEdit={editCategory}
-            />
-          ))}
-        </tbody>
-      </table>
+      {categories.map((category) => (
+        <CategoryCard
+          key={category._id}
+          category={category}
+          onDeleteCategory={handleDeleteCategory}
+          onEditCategory={handleEditCategory}
+          refreshData={() => setRefresh((prev) => prev + 1)}
+        />
+      ))}
+
+      {showAddCategoryModal && (
+        <Modal
+          title="Add New Category"
+          fields={[
+            { name: "name", label: "Category Name", required: true },
+            { name: "description", label: "Description" },
+          ]}
+          onSubmit={handleAddCategory}
+          onClose={() => setShowAddCategoryModal(false)}
+        />
+      )}
     </div>
   );
 }

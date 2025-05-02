@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ExpenseCard from "./ExpenseCard.jsx";
+import Modal from "./Modal.jsx";
 
 const API_BASE_EXPENSES = "http://localhost:5050/expenses";
 
@@ -11,8 +12,10 @@ const CategoryCard = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [expenses, setExpenses] = useState([]);
+  const [editedName, setEditedName] = useState(category.name);
+  const [editedDesc, setEditedDesc] = useState(category.description || "");
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
-  // Fetch expenses for this category
   useEffect(() => {
     if (isOpen) {
       fetch(`${API_BASE_EXPENSES}/category/${category._id}`)
@@ -20,81 +23,57 @@ const CategoryCard = ({
         .then((data) => {
           if (data.success) {
             setExpenses(data.expenses);
-          } else {
-            console.error("Failed to fetch expenses:", data.message);
           }
         });
     }
   }, [isOpen, category._id, refreshData]);
 
-  const handleAddExpense = () => {
-    const name = prompt("Expense name:");
-    const amount = parseFloat(prompt("Amount:"));
-    const description = prompt("Description:");
-
-    if (!name || isNaN(amount)) {
-      alert("Invalid input");
-      return;
+  const handleSaveCategory = () => {
+    const updates = {};
+    if (editedName !== category.name) updates.name = editedName;
+    if (editedDesc !== category.description) updates.description = editedDesc;
+    if (Object.keys(updates).length > 0) {
+      onEditCategory(category._id, updates);
     }
+  };
 
+  const handleAddExpense = (formData) => {
     fetch(`${API_BASE_EXPENSES}/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        amount,
-        category: category._id,
-        description,
-      }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setIsOpen(true); // keep open and refresh expenses
-      });
-  };
-
-  const handleEditExpense = (expense) => {
-    const newName = prompt("New name:", expense.name);
-    const newAmount = parseFloat(prompt("New amount:", expense.amount));
-    const newDescription = prompt("New description:", expense.description);
-
-    fetch(`${API_BASE_EXPENSES}/${expense._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: newName,
-        amount: newAmount,
-        description: newDescription,
-      }),
+      body: JSON.stringify({ ...formData, category: category._id }),
     }).then(() => {
-      setIsOpen(true); // refresh
+      setShowAddExpenseModal(false);
+      setIsOpen(true);
+      refreshData();
     });
   };
 
-  const handleDeleteExpense = (expenseId) => {
-    if (!window.confirm("Delete this expense?")) return;
-    fetch(`${API_BASE_EXPENSES}/${expenseId}`, { method: "DELETE" }).then(
-      () => {
-        setIsOpen(true); // refresh
-      }
-    );
-  };
-
   return (
-    <div className="border rounded my-3 shadow">
+    <div className="border rounded my-3 shadow w-full">
       <div
-        className="flex justify-between items-center p-3 bg-gray-200 cursor-pointer"
+        className="flex justify-between items-center p-3 bg-blue-200 cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}>
-        <div>
-          <h3 className="font-bold">{category.name}</h3>
-          <p className="text-sm">{category.description}</p>
+        <div className="flex-1 space-y-1">
+          <input
+            type="text"
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            className="w-full font-bold text-lg bg-transparent border-b border-blue-500 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={editedDesc}
+            onChange={(e) => setEditedDesc(e.target.value)}
+            className="w-full text-sm bg-transparent border-b border-blue-500 focus:outline-none"
+          />
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 ml-2">
           <button
             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
             onClick={(e) => {
               e.stopPropagation();
-              handleAddExpense();
+              setShowAddExpenseModal(true);
             }}>
             Add Expense
           </button>
@@ -102,11 +81,9 @@ const CategoryCard = ({
             className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded"
             onClick={(e) => {
               e.stopPropagation();
-              const newName = prompt("New category name:", category.name);
-              const newDesc = prompt("New description:", category.description);
-              onEditCategory(category._id, newName, newDesc);
+              handleSaveCategory();
             }}>
-            Edit
+            Save
           </button>
           <button
             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
@@ -125,11 +102,24 @@ const CategoryCard = ({
             <ExpenseCard
               key={expense._id}
               expense={expense}
-              onEditExpense={handleEditExpense}
-              onDeleteExpense={handleDeleteExpense}
+              refreshData={refreshData}
             />
           ))}
         </div>
+      )}
+
+      {showAddExpenseModal && (
+        <Modal
+          title="Add New Expense"
+          fields={[
+            { name: "name", label: "Expense Name", required: true },
+            { name: "description", label: "Description" },
+            { name: "amount", label: "Amount", type: "number", required: true },
+            { name: "date", label: "Date (YYYY-MM-DD)", type: "date" },
+          ]}
+          onSubmit={handleAddExpense}
+          onClose={() => setShowAddExpenseModal(false)}
+        />
       )}
     </div>
   );
