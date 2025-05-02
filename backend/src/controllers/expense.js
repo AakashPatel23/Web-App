@@ -233,28 +233,21 @@ export const updateExpense = async (req, res) => {
 export const generateTotalReport = async (req, res) => {
   const { startDate, endDate } = req.query;
 
-  if (!startDate || !endDate) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Start date and end date are required.",
-      });
-  }
-
   try {
     const expensesCollection = mongoose.connection.db.collection("expenses");
 
+    const matchStage = {};
+
+    if (startDate && endDate) {
+      matchStage.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
     const result = await expensesCollection
       .aggregate([
-        {
-          $match: {
-            date: {
-              $gte: new Date(startDate),
-              $lte: new Date(endDate),
-            },
-          },
-        },
+        { $match: matchStage },
         {
           $group: {
             _id: null,
@@ -277,91 +270,77 @@ export const generateTotalReport = async (req, res) => {
 
 
 
-  export const generateCategoryReport = async (req, res) => {
+export const generateCategoryReport = async (req, res) => {
     const { startDate, endDate } = req.query;
 
-    if (!startDate || !endDate) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Start date and end date are required.",
-        });
-    }
-
     try {
-      const expensesCollection = mongoose.connection.db.collection("expenses");
+        const expensesCollection = mongoose.connection.db.collection("expenses");
 
-      const result = await expensesCollection
-        .aggregate([
-          {
-            $match: {
-              date: {
+        const matchStage = {};
+
+        if (startDate && endDate) {
+            matchStage.date = {
                 $gte: new Date(startDate),
                 $lte: new Date(endDate),
-              },
-            },
-          },
-          {
-            $group: {
-              _id: "$category",
-              totalSpent: { $sum: "$amount" },
-              count: { $sum: 1 },
-            },
-          },
-          {
-            $lookup: {
-              from: "categories",
-              localField: "_id",
-              foreignField: "_id",
-              as: "categoryDetails",
-            },
-          },
-          {
-            $unwind: "$categoryDetails",
-          },
-          {
-            $project: {
-              categoryName: "$categoryDetails.name",
-              description: "$categoryDetails.description",
-              totalSpent: 1,
-              count: 1,
-            },
-          },
-        ])
-        .toArray();
+            };
+        }
 
-      return res.json({ success: true, report: result });
+        const result = await expensesCollection
+            .aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: "$category",
+                        totalSpent: { $sum: "$amount" },
+                        count: { $sum: 1 },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "categories",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "categoryDetails",
+                    },
+                },
+                { $unwind: "$categoryDetails" },
+                {
+                    $project: {
+                        categoryName: "$categoryDetails.name",
+                        description: "$categoryDetails.description",
+                        totalSpent: 1,
+                        count: 1,
+                    },
+                },
+            ])
+            .toArray();
+
+        return res.json({ success: true, report: result });
     } catch (error) {
-      console.error("Error generating category report:", error);
-      return res.status(500).json({ success: false, message: "Server error." });
+        console.error("Error generating category report:", error);
+        return res.status(500).json({ success: false, message: "Server error." });
     }
-  };
+};
 
 
 
    export const getHighestExpense = async (req, res) => {
      const { startDate, endDate } = req.query;
 
-     if (!startDate || !endDate) {
-       return res
-         .status(400)
-         .json({
-           success: false,
-           message: "Start date and end date are required.",
-         });
-     }
-
      try {
        const expensesCollection = mongoose.connection.db.collection("expenses");
 
+       const matchStage = {};
+
+       if (startDate && endDate) {
+         matchStage.date = {
+           $gte: new Date(startDate),
+           $lte: new Date(endDate),
+         };
+       }
+
        const result = await expensesCollection
-         .find({
-           date: {
-             $gte: new Date(startDate),
-             $lte: new Date(endDate),
-           },
-         })
+         .find(matchStage)
          .sort({ amount: -1 })
          .limit(1)
          .toArray();
@@ -377,57 +356,46 @@ export const generateTotalReport = async (req, res) => {
 
 
 
-   export const generateNameReport = async (req, res) => {
-     const { startDate, endDate } = req.query;
+export const generateNameReport = async (req, res) => {
+  const { startDate, endDate } = req.query;
 
-     if (!startDate || !endDate) {
-       return res
-         .status(400)
-         .json({
-           success: false,
-           message: "Start date and end date are required.",
-         });
-     }
+  try {
+    const expensesCollection = mongoose.connection.db.collection("expenses");
 
-     try {
-       const expensesCollection = mongoose.connection.db.collection("expenses");
+    const matchStage = {};
 
-       const result = await expensesCollection
-         .aggregate([
-           {
-             $match: {
-               date: {
-                 $gte: new Date(startDate),
-                 $lte: new Date(endDate),
-               },
-             },
-           },
-           {
-             $group: {
-               _id: "$name",
-               totalSpent: { $sum: "$amount" },
-               count: { $sum: 1 },
-             },
-           },
-           {
-             $project: {
-               expenseName: "$_id",
-               totalSpent: 1,
-               count: 1,
-               _id: 0,
-             },
-           },
-           {
-             $sort: { totalSpent: -1 }, // Optional: sort by highest total spent
-           },
-         ])
-         .toArray();
+    if (startDate && endDate) {
+      matchStage.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
 
-       return res.json({ success: true, report: result });
-     } catch (error) {
-       console.error("Error generating name report:", error);
-       return res
-         .status(500)
-         .json({ success: false, message: "Server error." });
-     }
-   };
+    const result = await expensesCollection
+      .aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$name",
+            totalSpent: { $sum: "$amount" },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            expenseName: "$_id",
+            totalSpent: 1,
+            count: 1,
+            _id: 0,
+          },
+        },
+        { $sort: { totalSpent: -1 } },
+      ])
+      .toArray();
+
+    return res.json({ success: true, report: result });
+  } catch (error) {
+    console.error("Error generating name report:", error);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+};
