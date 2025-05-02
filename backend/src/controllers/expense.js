@@ -2,7 +2,7 @@ import Expense from "../models/Expense.js";
 import validator from "validator";
 import mongoose from "mongoose";
 
-const expensesCollection = mongoose.connection.db.collection("expenses");
+
 
 export const createExpense = async (req, res) => {
   const expense = req.body; // Assuming you're sending expense data in the request body
@@ -271,55 +271,53 @@ export const generateTotalReport = async (req, res) => {
 
 
 export const generateCategoryReport = async (req, res) => {
-    const { startDate, endDate } = req.query;
+  const { startDate, endDate } = req.query;
 
-    try {
-        const expensesCollection = mongoose.connection.db.collection("expenses");
+  try {
+    const categoriesCollection =
+      mongoose.connection.db.collection("categories");
 
-        const matchStage = {};
-
-        if (startDate && endDate) {
-            matchStage.date = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
-        }
-
-        const result = await expensesCollection
-            .aggregate([
-                { $match: matchStage },
-                {
-                    $group: {
-                        _id: "$category",
-                        totalSpent: { $sum: "$amount" },
-                        count: { $sum: 1 },
-                    },
+    const result = await categoriesCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "expenses",
+            let: { categoryId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$category", "$$categoryId"],
+                  },
+                  ...(startDate &&
+                    endDate && {
+                      date: {
+                        $gte: new Date(startDate),
+                        $lte: new Date(endDate),
+                      },
+                    }),
                 },
-                {
-                    $lookup: {
-                        from: "categories",
-                        localField: "_id",
-                        foreignField: "_id",
-                        as: "categoryDetails",
-                    },
-                },
-                { $unwind: "$categoryDetails" },
-                {
-                    $project: {
-                        categoryName: "$categoryDetails.name",
-                        description: "$categoryDetails.description",
-                        totalSpent: 1,
-                        count: 1,
-                    },
-                },
-            ])
-            .toArray();
+              },
+            ],
+            as: "expenses",
+          },
+        },
+        {
+          $project: {
+            categoryName: "$name",
+            description: "$description",
+            totalSpent: { $sum: "$expenses.amount" },
+            count: { $size: "$expenses" },
+          },
+        },
+      ])
+      .toArray();
 
-        return res.json({ success: true, report: result });
-    } catch (error) {
-        console.error("Error generating category report:", error);
-        return res.status(500).json({ success: false, message: "Server error." });
-    }
+    return res.json({ success: true, report: result });
+  } catch (error) {
+    console.error("Error generating category report:", error);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
 };
 
 
