@@ -10,6 +10,8 @@ const CategoryCard = ({
   onDeleteCategory,
   onEditCategory,
   refreshData,
+  filteredExpenses,
+  filteredTotal,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [expenses, setExpenses] = useState([]);
@@ -18,8 +20,7 @@ const CategoryCard = ({
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [total, setTotal] = useState(0);
 
-  // Fetch expenses + total on mount & refresh
-  useEffect(() => {
+  const fetchExpenses = () => {
     fetch(`${API_BASE_EXPENSES}/category/${category._id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -27,9 +28,21 @@ const CategoryCard = ({
           setExpenses(data.expenses);
           const sum = data.expenses.reduce((acc, e) => acc + e.amount, 0);
           setTotal(sum);
+        } else {
+          setExpenses([]);
+          setTotal(0);
         }
       });
-  }, [category._id, refreshData]);
+  };
+
+  useEffect(() => {
+    if (filteredExpenses !== undefined) {
+      setExpenses(filteredExpenses);
+      setTotal(filteredTotal || 0);
+    } else {
+      fetchExpenses();
+    }
+  }, [filteredExpenses, filteredTotal, category._id, refreshData]);
 
   const handleSaveCategory = () => {
     const updates = {};
@@ -60,6 +73,15 @@ const CategoryCard = ({
       return;
     }
 
+    if (formData.date) {
+      const today = new Date();
+      const selectedDate = new Date(formData.date);
+      if (selectedDate > today) {
+        alert("Date cannot be in the future.");
+        return;
+      }
+    }
+
     const safeData = {
       name: validator.trim(formData.name),
       description: formData.description
@@ -76,50 +98,54 @@ const CategoryCard = ({
       body: JSON.stringify(safeData),
     }).then(() => {
       setShowAddExpenseModal(false);
-      setIsOpen(true);
+      fetchExpenses();
       refreshData();
     });
   };
 
-  // Get today's date for default
   const todayDate = new Date().toISOString().split("T")[0];
 
   return (
     <div className="border rounded my-3 shadow w-full">
-      <div className="flex justify-between items-center p-3 bg-blue-900 text-white">
+      <div
+        className="flex justify-between items-center p-3"
+        style={{ backgroundColor: "#cce5ff" }} // Softer Easter-blue
+      >
         <div className="flex-1 space-y-1">
           <input
             type="text"
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
-            className="w-full font-bold text-lg bg-transparent focus:outline-none"
+            className="w-full font-bold text-lg bg-transparent focus:outline-none text-purple-700"
           />
           <input
             type="text"
             value={editedDesc}
             onChange={(e) => setEditedDesc(e.target.value)}
-            className="w-full text-sm bg-transparent focus:outline-none"
+            className="w-full text-sm bg-transparent focus:outline-none text-purple-600"
           />
-          <p className="text-sm mt-1">Total: ${total.toFixed(2)}</p>
+          <p className="text-sm mt-1 text-purple-600">
+            Total: ${total.toFixed(2)}
+          </p>
         </div>
         <div className="flex space-x-2 ml-2">
           <button
-            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+            className="bg-pink-300 hover:bg-pink-400 text-white px-3 py-1 rounded"
             onClick={() => setShowAddExpenseModal(true)}>
             Add Expense
           </button>
           <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded"
+            className="bg-yellow-300 hover:bg-yellow-400 text-white px-3 py-1 rounded"
             onClick={handleSaveCategory}>
             Save
           </button>
           <button
-            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            className="bg-red-300 hover:bg-red-400 text-white px-3 py-1 rounded"
             onClick={() => onDeleteCategory(category._id)}>
             Delete
           </button>
           <button
-            className="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
+            className="bg-purple-300 hover:bg-purple-400 text-white px-3 py-1 rounded"
             onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? "▲ Hide" : "▼ Show"}
           </button>
@@ -127,17 +153,18 @@ const CategoryCard = ({
       </div>
 
       {isOpen && (
-        <div className="p-3">
-          {expenses.length === 0 && (
+        <div className="p-3 bg-[#f9f3f9]">
+          {expenses.length === 0 ? (
             <p className="text-gray-500 italic">No expenses yet.</p>
+          ) : (
+            expenses.map((expense) => (
+              <ExpenseCard
+                key={expense._id}
+                expense={expense}
+                refreshData={fetchExpenses}
+              />
+            ))
           )}
-          {expenses.map((expense) => (
-            <ExpenseCard
-              key={expense._id}
-              expense={expense}
-              refreshData={refreshData}
-            />
-          ))}
         </div>
       )}
 
@@ -147,7 +174,13 @@ const CategoryCard = ({
           fields={[
             { name: "name", label: "Expense Name", required: true },
             { name: "description", label: "Description" },
-            { name: "amount", label: "Amount", type: "number", required: true },
+            {
+              name: "amount",
+              label: "Amount",
+              type: "text",
+              required: true,
+              placeholder: "Enter amount (e.g., 12.99)",
+            },
             {
               name: "date",
               label: "Date (YYYY-MM-DD)",

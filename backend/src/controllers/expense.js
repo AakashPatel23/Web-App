@@ -24,9 +24,9 @@ export const createExpense = async (req, res) => {
   }
 
   // Sanitize the expense name and description (if provided)
-  expense.name = validator.escape(expense.name.trim()); // Sanitize and trim the expense name
+  expense.name = expense.name.trim();
   expense.description = expense.description
-    ? validator.escape(expense.description.trim())
+    ? expense.description.trim()
     : null; // Sanitize notes (if provided)
 
   let expenseDate;
@@ -129,9 +129,16 @@ export const getAllExpensesByCategory = async (req, res) => {
     }
 
     // Fetch expenses for the user filtered by category and populate the category name
-    const expenses = await Expense.find({ category: categoryId })
-      .populate("category", "name") // Populate category name
-      .sort({ date: -1 }); // Sort expenses by date in descending order
+    const search = req.query.search;
+    const query = { category: categoryId };
+
+    if (search) {
+      query.name = { $regex: new RegExp(search, "i") }; // case-insensitive search
+    }
+
+    const expenses = await Expense.find(query)
+      .populate("category", "name")
+      .sort({ date: -1 });
 
     if (expenses.length === 0) {
       return res.status(404).json({
@@ -190,7 +197,7 @@ export const updateExpense = async (req, res) => {
 
     // Create an update object with sanitized fields
     const updates = {};
-    if (name) updates.name = validator.escape(name.trim());
+    if (name) updates.name = name.trim();
     if (amount && !isNaN(amount) && amount > 0) updates.amount = amount;
     if (category) updates.category = category;
     if (description) updates.description = validator.escape(description.trim());
