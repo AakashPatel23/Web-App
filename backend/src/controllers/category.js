@@ -170,3 +170,22 @@ export const updateCategory = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
+
+export const getAllCategoriesWithExpenses = async (req, res) => {
+  try {
+    const categories = await Category.find();
+    const categoriesWithExpenses = await Promise.all(
+      categories.map(async (category) => {
+        const expenses = await Expense.find({ category: category._id });
+        return {
+          ...category.toObject(),
+          expenses,
+        };
+      })
+    );
+    res.json({ success: true, categories: categoriesWithExpenses });
+  } catch (error) {
+    console.error("Error fetching categories with expenses:", error);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};

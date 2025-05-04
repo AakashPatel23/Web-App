@@ -5,6 +5,7 @@ import {
   getAllCategories,
   getCategoryById,
   updateCategory,
+  getAllCategoriesWithExpenses
 } from "../controllers/category.js"; // Assuming you have a createCategory function in your controllers
 const router = express.Router();
 
@@ -24,3 +25,6 @@ router.get("/id/:categoryId", getCategoryById);
 
 // Update category while sanitizing the input
 router.patch("/:categoryId", updateCategory);
+
+// In your router file
+router.get("/with-expenses", getAllCategoriesWithExpenses);

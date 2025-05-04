@@ -119,33 +119,29 @@ export const getAllExpenses = async (req, res) => {
 export const getAllExpensesByCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
+    const { search, startDate, endDate } = req.query;
 
-    if (
-      !mongoose.Types.ObjectId.isValid(categoryId)
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid category ID." });
     }
 
-    // Fetch expenses for the user filtered by category and populate the category name
-    const search = req.query.search;
     const query = { category: categoryId };
 
     if (search) {
-      query.name = { $regex: new RegExp(search, "i") }; // case-insensitive search
+      query.name = { $regex: new RegExp(search, "i") };
+    }
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
     }
 
     const expenses = await Expense.find(query)
       .populate("category", "name")
       .sort({ date: -1 });
-
-    if (expenses.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No expenses found for this category.",
-      });
-    }
 
     return res.status(200).json({ success: true, expenses });
   } catch (error) {
@@ -153,6 +149,8 @@ export const getAllExpensesByCategory = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
+
+
 
 export const getExpenseById = async (req, res) => {
   try {
@@ -404,3 +402,4 @@ export const generateNameReport = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
+

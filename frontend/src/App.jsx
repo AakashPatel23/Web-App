@@ -13,7 +13,6 @@ import {
 const API_BASE_CATEGORIES = "http://localhost:5050/categories";
 const API_BASE_EXPENSES = "http://localhost:5050/expenses";
 
-// Easter-themed Pie chart colors (pastel shades)
 const COLORS = [
   "#f8b195",
   "#f67280",
@@ -27,89 +26,65 @@ const COLORS = [
 
 function App() {
   const [allCategories, setAllCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
   const [totalExpense, setTotalExpense] = useState(0);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
   const [report, setReport] = useState(null);
   const [reportError, setReportError] = useState("");
+  const [showReport, setShowReport] = useState(false);
+  const [filtersActive, setFiltersActive] = useState(false);
 
-  const refreshDataAndTotals = () => {
-    fetch(`${API_BASE_CATEGORIES}/`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setAllCategories(data.categories);
-          setFilteredCategories(data.categories);
-
-          // Fetch all expenses and calculate the grand total
-          Promise.all(
-            data.categories.map((category) =>
-              fetch(`${API_BASE_EXPENSES}/category/${category._id}`)
-                .then((res) => res.json())
-                .then((expenseData) => {
-                  if (expenseData.success) {
-                    return expenseData.expenses.reduce(
-                      (acc, e) => acc + e.amount,
-                      0
-                    );
-                  } else {
-                    return 0;
-                  }
-                })
-            )
-          ).then((totals) => {
-            const grandTotal = totals.reduce((sum, curr) => sum + curr, 0);
-            setTotalExpense(grandTotal);
-          });
-        } else {
-          setAllCategories([]);
-          setFilteredCategories([]);
-          setTotalExpense(0);
-        }
-      });
+  const fetchData = () => {
+    if (filtersActive) {
+      applyFilters();
+    } else {
+      fetch(`${API_BASE_CATEGORIES}/with-expenses`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setAllCategories(data.categories);
+            const sum = data.categories.reduce(
+              (acc, cat) =>
+                acc + cat.expenses.reduce((eAcc, e) => eAcc + e.amount, 0),
+              0
+            );
+            setTotalExpense(sum);
+          } else {
+            setAllCategories([]);
+            setTotalExpense(0);
+          }
+        });
+    }
   };
 
   useEffect(() => {
-    refreshDataAndTotals(); // Initial load includes totals
+    fetchData();
   }, []);
 
-  const validateDates = () => {
-    if (startDate && isNaN(Date.parse(startDate))) {
-      alert("Invalid Start Date.");
-      return false;
-    }
-    if (endDate && isNaN(Date.parse(endDate))) {
-      alert("Invalid End Date.");
-      return false;
-    }
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      alert("Start Date cannot be after End Date.");
-      return false;
-    }
-    return true;
-  };
+  const applyFilters = () => {
+    fetch(`${API_BASE_CATEGORIES}/with-expenses`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) {
+          setAllCategories([]);
+          setTotalExpense(0);
+          return;
+        }
 
-  const handleApplyFilters = () => {
-    if (!validateDates()) return;
+        const filtered = data.categories
+          .map((category) => {
+            let expenses = category.expenses;
 
-    Promise.all(
-      allCategories.map((category) =>
-        fetch(
-          `${API_BASE_EXPENSES}/category/${
-            category._id
-          }?search=${encodeURIComponent(searchTerm)}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.success) return null;
+            // Filter by name (search term)
+            if (searchTerm) {
+              expenses = expenses.filter((e) =>
+                e.name.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+            }
 
-            let expenses = data.expenses;
-
+            // Filter by date
             if (startDate) {
               expenses = expenses.filter(
                 (e) => new Date(e.date) >= new Date(startDate)
@@ -121,7 +96,7 @@ function App() {
               );
             }
 
-            const categoryTotal = expenses.reduce(
+            const totalFiltered = expenses.reduce(
               (acc, e) => acc + e.amount,
               0
             );
@@ -129,38 +104,68 @@ function App() {
             return {
               ...category,
               expenses,
-              filteredTotal: categoryTotal,
+              totalFiltered,
             };
           })
-      )
-    ).then((updated) => {
-      const cleaned = updated.filter(Boolean);
-      setFilteredCategories(cleaned);
+          .filter((cat) => cat.expenses.length > 0); // Remove empty categories
 
-      const newTotal = cleaned.reduce(
-        (acc, cat) => acc + (cat.filteredTotal || 0),
-        0
-      );
-      setTotalExpense(newTotal);
+        setAllCategories(filtered);
+
+        const sum = filtered.reduce(
+          (acc, cat) => acc + (cat.totalFiltered || 0),
+          0
+        );
+        setTotalExpense(sum);
+      });
+  };
+
+  const handleApplyFilters = () => {
+    setFiltersActive(true);
+    applyFilters();
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setStartDate("");
+    setEndDate("");
+    setFiltersActive(false);
+    fetchData();
+  };
+
+  const handleAddCategory = (formData) => {
+    fetch(`${API_BASE_CATEGORIES}/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    }).then(() => {
+      setShowAddCategoryModal(false);
+      fetchData();
     });
   };
 
   const handleGenerateReport = () => {
-    if (!validateDates()) return;
+    fetch(`${API_BASE_CATEGORIES}/with-expenses`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) {
+          setReport(null);
+          setReportError("Failed to fetch data for the report.");
+          setShowReport(true);
+          return;
+        }
 
-    Promise.all(
-      allCategories.map((category) =>
-        fetch(
-          `${API_BASE_EXPENSES}/category/${
-            category._id
-          }?search=${encodeURIComponent(searchTerm)}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.success) return null;
+        const filtered = data.categories
+          .map((category) => {
+            let expenses = category.expenses;
 
-            let expenses = data.expenses;
+            // Filter by name (search term)
+            if (searchTerm) {
+              expenses = expenses.filter((e) =>
+                e.name.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+            }
 
+            // Filter by date
             if (startDate) {
               expenses = expenses.filter(
                 (e) => new Date(e.date) >= new Date(startDate)
@@ -177,67 +182,39 @@ function App() {
               expenses,
             };
           })
-      )
-    ).then((results) => {
-      const cleaned = results.filter(Boolean);
-      const allExpenses = cleaned.flatMap((r) => r.expenses);
+          .filter((r) => r.expenses.length > 0);
 
-      if (allExpenses.length === 0) {
-        setReport(null);
-        setReportError("No expenses found in this date range.");
-        return;
-      }
+        const allExpenses = filtered.flatMap((r) => r.expenses);
+        if (allExpenses.length === 0) {
+          setReport(null);
+          setReportError("No expenses found for current filters.");
+          setShowReport(true);
+          return;
+        }
 
-      const totalSpent = allExpenses.reduce((acc, e) => acc + e.amount, 0);
+        const totalSpent = allExpenses.reduce((acc, e) => acc + e.amount, 0);
 
-      const categorySums = cleaned.map((r) => {
-        const sum = r.expenses.reduce((acc, e) => acc + e.amount, 0);
-        return {
-          name: r.category.name,
-          amount: sum,
-          percent: ((sum / totalSpent) * 100).toFixed(1),
-        };
+        const categorySums = filtered.map((r) => {
+          const sum = r.expenses.reduce((acc, e) => acc + e.amount, 0);
+          return {
+            name: r.category.name,
+            amount: sum,
+            percent: ((sum / totalSpent) * 100).toFixed(1),
+          };
+        });
+
+        const mostExpensive = allExpenses.reduce((prev, curr) =>
+          curr.amount > prev.amount ? curr : prev
+        );
+
+        setReport({
+          totalSpent,
+          categorySums,
+          mostExpensive,
+        });
+        setReportError("");
+        setShowReport(true);
       });
-
-      const mostExpensive = allExpenses.reduce((prev, curr) =>
-        curr.amount > prev.amount ? curr : prev
-      );
-
-      const reportData = {
-        totalSpent,
-        categorySums,
-        mostExpensive,
-      };
-
-      setReport(reportData);
-      setReportError("");
-    });
-  };
-
-  const handleAddCategory = (formData) => {
-    fetch(`${API_BASE_CATEGORIES}/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    }).then(() => {
-      setShowAddCategoryModal(false);
-      refreshDataAndTotals();
-    });
-  };
-
-  const handleDeleteCategory = (categoryId) => {
-    if (!window.confirm("Delete this category?")) return;
-    fetch(`${API_BASE_CATEGORIES}/${categoryId}`, { method: "DELETE" }).then(
-      () => refreshDataAndTotals()
-    );
-  };
-
-  const handleEditCategory = (categoryId, updates) => {
-    fetch(`${API_BASE_CATEGORIES}/${categoryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    }).then(() => refreshDataAndTotals());
   };
 
   return (
@@ -249,15 +226,12 @@ function App() {
         <p className="text-lg text-center mb-4 text-pink-500">
           Total Expenses: ${totalExpense.toFixed(2)}
         </p>
-
-        {/* Controls */}
         <div className="flex flex-wrap justify-center gap-3 mb-6 w-full">
           <button
-            className="bg-pink-300 hover:bg-pink-400 text-white px-4 py-2 rounded"
+            className="!bg-white hover:bg-pink-400 text-black px-4 py-2 rounded"
             onClick={() => setShowAddCategoryModal(true)}>
-            + Add Category
+            Add Category
           </button>
-
           <input
             type="text"
             placeholder="Search expenses"
@@ -265,7 +239,6 @@ function App() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border border-purple-300 rounded px-2 py-2 w-48 text-black"
           />
-
           <div className="flex flex-col">
             <label className="text-sm mb-1 text-purple-700">Start Date:</label>
             <input
@@ -275,7 +248,6 @@ function App() {
               className="border border-purple-300 rounded px-2 py-1 text-black"
             />
           </div>
-
           <div className="flex flex-col">
             <label className="text-sm mb-1 text-purple-700">End Date:</label>
             <input
@@ -285,107 +257,112 @@ function App() {
               className="border border-purple-300 rounded px-2 py-1 text-black"
             />
           </div>
-
           <button
-            className="bg-purple-300 hover:bg-purple-400 text-white px-3 py-2 rounded"
+            className="!bg-white hover:bg-green-500 text-black px-3 py-2 rounded"
             onClick={handleApplyFilters}>
             Apply Filters
           </button>
-
           <button
-            className="bg-yellow-300 hover:bg-yellow-400 text-white px-3 py-2 rounded"
+            className="!bg-white hover:bg-gray-400 text-black px-3 py-2 rounded"
+            onClick={handleResetFilters}>
+            Reset Filters
+          </button>
+          <button
+            className="!bg-white hover:bg-yellow-400 text-black px-3 py-2 rounded"
             onClick={handleGenerateReport}>
             Generate Report
           </button>
+          {showReport && (
+            <button
+              className="!bg-white hover:bg-gray-500 text-black px-3 py-2 rounded"
+              onClick={() => setShowReport(false)}>
+              Hide Report
+            </button>
+          )}
         </div>
 
         {/* Report */}
-        {reportError && (
-          <div className="text-red-500 text-center my-4">{reportError}</div>
-        )}
-
-        {report && (
-          <div className="bg-[#fdf1f8] text-black border rounded p-4 mt-4 w-full">
-            <h2 className="text-xl font-bold mb-2 text-purple-700">
-              Expense Report
-            </h2>
-            <p>
-              You spent ${report.totalSpent.toFixed(2)}{" "}
-              {startDate || endDate ? (
-                <>
-                  from {startDate || "the beginning"} to {endDate || "today"}.
-                </>
-              ) : (
-                <>in total (all time).</>
-              )}
-            </p>
-            <div className="mt-3">
-              <h3 className="font-semibold mb-1">By Category:</h3>
-              {report.categorySums.map((cat, index) => (
-                <p key={cat.name}>
-                  {cat.name}: ${cat.amount.toFixed(2)} ({cat.percent}%)
-                </p>
-              ))}
-            </div>
-            <div className="mt-3">
-              <h3 className="font-semibold">Top Expense:</h3>
+        {showReport &&
+          (reportError ? (
+            <div className="text-red-500 text-center my-4">{reportError}</div>
+          ) : report ? (
+            <div className="bg-[#fdf1f8] text-black border rounded p-4 mt-4 w-full">
+              <h2 className="text-xl font-bold mb-2 text-purple-700">
+                Expense Report
+              </h2>
               <p>
-                The most expensive item you have is{" "}
-                <strong>{report.mostExpensive.name}</strong> from category{" "}
-                <strong>{report.mostExpensive.category.name}</strong>.
+                You spent ${report.totalSpent.toFixed(2)}{" "}
+                {startDate || endDate ? (
+                  <>
+                    from {startDate || "the beginning"} to {endDate || "today"}.
+                  </>
+                ) : (
+                  <>in total (all time).</>
+                )}
               </p>
+              <div className="mt-3">
+                <h3 className="font-semibold mb-1">By Category:</h3>
+                {report.categorySums.map((cat) => (
+                  <p key={cat.name}>
+                    {cat.name}: ${cat.amount.toFixed(2)} ({cat.percent}%)
+                  </p>
+                ))}
+              </div>
+              <div className="mt-3">
+                <h3 className="font-semibold">Top Expense:</h3>
+                <p>
+                  The most expensive item is{" "}
+                  <strong>
+                    {report.mostExpensive.name} (${report.mostExpensive.amount})
+                  </strong>{" "}
+                  from category{" "}
+                  <strong>{report.mostExpensive.category.name}</strong>.
+                </p>
+              </div>
+              <div className="mt-6" style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={report.categorySums}
+                      dataKey="amount"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      label>
+                      {report.categorySums.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-
-            {/* Pie Chart */}
-            <div className="mt-6" style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={report.categorySums}
-                    dataKey="amount"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    label>
-                    {report.categorySums.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+          ) : null)}
 
         {/* Category Cards */}
         <div className="w-full mt-6 space-y-4">
-          {filteredCategories.length === 0 ? (
+          {allCategories.length === 0 ? (
             <p className="text-gray-500 italic text-center">
-              No categories or expenses found for current filters.
+              No categories or expenses found.
             </p>
           ) : (
-            filteredCategories.map((category) => (
+            allCategories.map((category) => (
               <CategoryCard
                 key={category._id}
                 category={category}
-                onDeleteCategory={handleDeleteCategory}
-                onEditCategory={handleEditCategory}
-                refreshData={refreshDataAndTotals} // 🟢 Pass the refresh handler here
-                filteredExpenses={category.expenses}
-                filteredTotal={category.filteredTotal}
+                refreshData={fetchData}
               />
             ))
           )}
         </div>
 
-        {/* Modal */}
         {showAddCategoryModal && (
           <Modal
             key={Date.now()}
