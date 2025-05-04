@@ -24,11 +24,11 @@ MONGO_URI=<mongo URI string>
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd personal-financial-tracker
+   cd Web-App
    ```
 
 2. **Install Dependencies**
-    ```npm install``
+    ```npm install```
     ```cd frontend; npm install; cd ..```
 
 ### Running App
