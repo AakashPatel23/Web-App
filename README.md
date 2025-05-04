@@ -28,8 +28,9 @@ MONGO_URI=<mongo URI string>
    ```
 
 2. **Install Dependencies**
-    ```npm install```
     
+    ```npm install```
+
     ```cd frontend; npm install; cd ..```
 
 ### Running App
