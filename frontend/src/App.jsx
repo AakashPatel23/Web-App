@@ -34,33 +34,28 @@ function App() {
   const [report, setReport] = useState(null);
   const [reportError, setReportError] = useState("");
   const [showReport, setShowReport] = useState(false);
-  const [filtersActive, setFiltersActive] = useState(false);
 
-  const fetchData = () => {
-    if (filtersActive) {
-      applyFilters();
-    } else {
-      fetch(`${API_BASE_CATEGORIES}/with-expenses`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setAllCategories(data.categories);
-            const sum = data.categories.reduce(
-              (acc, cat) =>
-                acc + cat.expenses.reduce((eAcc, e) => eAcc + e.amount, 0),
-              0
-            );
-            setTotalExpense(sum);
-          } else {
-            setAllCategories([]);
-            setTotalExpense(0);
-          }
-        });
-    }
+  const fetchAllData = () => {
+    fetch(`${API_BASE_CATEGORIES}/with-expenses`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setAllCategories(data.categories);
+          const sum = data.categories.reduce(
+            (acc, cat) =>
+              acc + cat.expenses.reduce((eAcc, e) => eAcc + e.amount, 0),
+            0
+          );
+          setTotalExpense(sum);
+        } else {
+          setAllCategories([]);
+          setTotalExpense(0);
+        }
+      });
   };
 
   useEffect(() => {
-    fetchData();
+    fetchAllData();
   }, []);
 
   const applyFilters = () => {
@@ -120,7 +115,6 @@ function App() {
   };
 
   const handleApplyFilters = () => {
-    setFiltersActive(true);
     applyFilters();
   };
 
@@ -128,8 +122,7 @@ function App() {
     setSearchTerm("");
     setStartDate("");
     setEndDate("");
-    setFiltersActive(false);
-    fetchData();
+    fetchAllData();
   };
 
   const handleAddCategory = (formData) => {
@@ -139,7 +132,7 @@ function App() {
       body: JSON.stringify(formData),
     }).then(() => {
       setShowAddCategoryModal(false);
-      fetchData();
+      fetchAllData();
     });
   };
 
@@ -184,7 +177,12 @@ function App() {
           })
           .filter((r) => r.expenses.length > 0);
 
-        const allExpenses = filtered.flatMap((r) => r.expenses);
+        const allExpenses = filtered.flatMap((r) =>
+          r.expenses.map((expense) => ({
+            ...expense,
+            categoryName: r.category.name,
+          }))
+        );
         if (allExpenses.length === 0) {
           setReport(null);
           setReportError("No expenses found for current filters.");
@@ -216,7 +214,6 @@ function App() {
         setShowReport(true);
       });
   };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-screen p-5 text-purple-800 bg-[#ffe6f0]">
       <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
@@ -316,7 +313,7 @@ function App() {
                     {report.mostExpensive.name} (${report.mostExpensive.amount})
                   </strong>{" "}
                   from category{" "}
-                  <strong>{report.mostExpensive.category.name}</strong>.
+                  <strong>{report.mostExpensive.categoryName}</strong>.
                 </p>
               </div>
               <div className="mt-6" style={{ width: "100%", height: 300 }}>
@@ -357,7 +354,7 @@ function App() {
               <CategoryCard
                 key={category._id}
                 category={category}
-                refreshData={fetchData}
+                refreshData={fetchAllData}
               />
             ))
           )}
