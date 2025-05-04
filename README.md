@@ -14,7 +14,8 @@ This is a full-stack MERN application that tracks personal expenses across vario
 ### Environment Configuration
 Create a `.env` file in the root directory with the following variables:
 
-```PORT=5050
+```
+PORT=5050
 MONGO_URI=<mongo URI string>
 ```
 
